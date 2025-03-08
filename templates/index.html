@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 pt-6 pl-8 pr-8 pb-4">
+    <!-- Header with Logo on Left and RUET Logo on Right -->
+   
+<div class="site-primary-header-wrap ast-builder-grid-row-container site-header-focus-item ast-container" data-section="section-primary-header-builder">
+    <div class="ast-builder-grid-row ast-builder-grid-row-has-sides ast-builder-grid-row-no-center flex justify-between items-center">
+        <!-- Left Section with Existing Logo -->
+        <div class="site-header-primary-section-left site-header-section ast-flex site-header-section-left">
+            <div class="ast-builder-layout-element ast-flex site-header-focus-item" data-section="title_tagline">
+                <div class="site-branding ast-site-identity" itemtype="https://schema.org/Organization" itemscope="itemscope">
+                    <span class="site-logo-img"><a href="https://brainstation-23.com/" class="custom-logo-link" rel="home" aria-current="page"><img width="300" height="48" src="https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo-250x40.png" class="custom-logo" alt="Brain Station 23 PLC. | Professionals @ Your Service" decoding="async" srcset="https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo-250x40.png 1x, https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo.png 2x" sizes="(max-width: 250px) 100vw, 250px"></a></span>
+                </div> <!-- .site-branding -->
+            </div>
+        </div>
+        <!-- Right Section with RUET Logo -->
+        <div class="site-header-primary-section-right site-header-section ast-flex site-header-section-right">
+            <div class="ast-builder-layout-element ast-flex site-header-focus-item">
+                <img src="{{ url_for('static', filename='ruet.png') }}" alt="RUET Logo" class="h-16 w-auto object-contain">
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="loading" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+    </div>
+
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-semibold mb-6 text-center">Web Scraper</h1>
+
+        <form method="POST" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+            <label for="url" class="block text-lg font-medium" id="url-label">Enter URL or Movie Name:</label>
+            <input type="text" id="url" name="url" required 
+                   class="w-full p-3 border border-gray-300 rounded-lg mb-4" 
+                   placeholder="Enter URL or Movie Name..." 
+                   aria-label="Enter URL or Movie Name">
+
+            <label for="data_type" class="block text-lg font-medium">Select Data Type:</label>
+            <select name="data_type" id="data_type" required 
+                    class="w-full p-3 border border-gray-300 rounded-lg mb-4" 
+                    aria-label="Select Data Type">
+                <option value="table">Table</option>
+                <option value="image">Image</option>
+                <option value="movie">Movie</option>
+                <option value="video">Video</option>
+                <option value="ebay">e-Bay Product</option>
+                <option value="news">News Headlines</option>
+                <option value="pdf">PDF Files</option>
+            </select>
+
+            <button type="submit" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">Scrape Data</button>
+        </form>
+
+        {% if error %}
+            <p class="text-red-500 text-center mt-4">{{ error }}</p>
+        {% endif %}
+
+        {% if data_type == 'table' %}
+            {% if tables %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ tables|length }} tables on this page.</h2>
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="data_type" value="table">
+                    <label for="table_number" class="block text-lg">Select table(s) (hold Ctrl or Cmd to select multiple):</label>
+                    <select name="table_number" id="table_number" multiple 
+                            size="{{ tables|length }}" 
+                            class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+                        {% for i in range(tables|length) %}
+                            <option value="{{ i }}" {% if i in selected_tables %}selected{% endif %}>Table {{ i + 1 }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Show Selected Tables</button>
+                </form>
+            {% endif %}
+
+            {% if selected_tables %}
+                {% for table_index in selected_tables %}
+                    <h3 class="text-xl font-semibold mt-6">Selected Table #{{ table_index + 1 }}:</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border-collapse mb-6">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    {% for column in tables[table_index][0] %}
+                                        <th class="border border-gray-300 p-2 text-left">{{ column|e }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in tables[table_index][1:] %}
+                                    <tr class="{{ loop.cycle('bg-white', 'bg-gray-50') }} hover:bg-gray-100">
+                                        {% for cell in row %}
+                                            <td class="border border-gray-300 p-2">{{ cell|e }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'image' %}
+            {% if images %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ images|length }} images on this page.</h2>
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="data_type" value="image">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="num_images" class="block text-lg">Number of images to display:</label>
+                            <input type="number" name="num_images" id="num_images" 
+                                   value="{{ num_images|default(images|length) }}" 
+                                   min="1" max="{{ images|length }}" 
+                                   class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="image_format" class="block text-lg font-medium">Image Format:</label>
+                            <select name="image_format" id="image_format" 
+                                    class="w-full p-3 border border-gray-300 rounded-lg">
+                                <option value="all" {% if image_format == 'all' %}selected{% endif %}>All</option>
+                                <option value="png" {% if image_format == 'png' %}selected{% endif %}>PNG</option>
+                                <option value="jpg" {% if image_format == 'jpg' %}selected{% endif %}>JPG</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
+                </form>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
+                    {% for img_url in images %}
+                        <div class="flex flex-col items-center">
+                            <img src="{{ img_url|e }}" alt="Scraped image" 
+                                 class="w-full max-w-xs h-auto border rounded-lg shadow-lg object-cover"
+                                 loading="lazy" 
+                                 onerror="this.src='/static/fallback.jpg';">
+                            <a href="{{ img_url|e }}" target="_blank" 
+                               class="mt-2 text-blue-500 text-sm hover:underline" 
+                               title="Open image in new tab">View Image</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'movie' %}
+            {% if movie_data %}
+                <div class="mt-6 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">Movie Details</h2>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <img src="{{ movie_data.poster_url|e }}" alt="{{ movie_data.name|e }} poster" 
+                             class="w-48 h-auto rounded-lg object-cover">
+                        <div>
+                            <p><strong>Movie Name:</strong> {{ movie_data.name|e }}</p>
+                            <p><strong>Year:</strong> {{ movie_data.year|e }}</p>
+                            <p><strong>Rating:</strong> {{ movie_data.rating|e }}</p>
+                            <p><strong>Plot:</strong> {{ movie_data.plot|e }}</p>
+                            <p><strong>Genre:</strong> {{ movie_data.genre|e }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'video' %}
+            {% if video_data %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ video_data|length }} videos on this page.</h2>
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="data_type" value="video">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="num_videos" class="block text-lg">Number of videos to display:</label>
+                            <input type="number" name="num_videos" id="num_videos" 
+                                   value="{{ num_videos|default(video_data|length) }}" 
+                                   min="1" max="{{ video_data|length }}" 
+                                   class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="video_format" class="block text-lg font-medium">Video Format:</label>
+                            <select name="video_format" id="video_format" 
+                                    class="w-full p-3 border border-gray-300 rounded-lg">
+                                <option value="all" {% if video_format == 'all' %}selected{% endif %}>All</option>
+                                <option value="mp4" {% if video_format == 'mp4' %}selected{% endif %}>MP4</option>
+                                <option value="webm" {% if video_format == 'webm' %}selected{% endif %}>WEBM</option>
+                                <option value="ogg" {% if video_format == 'ogg' %}selected{% endif %}>OGG</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
+                </form>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
+                    {% for video_url in video_data %}
+                        <div class="flex flex-col items-center">
+                            <video width="320" height="240" controls loading="lazy" 
+                                   class="w-full max-w-xs h-auto border rounded-lg shadow-lg object-cover">
+                                <source src="{{ video_url|e }}" type="video/{{ video_format|default('mp4') }}">
+                                Your browser does not support the video tag.
+                            </video>
+                            <a href="{{ video_url|e }}" target="_blank" 
+                               class="mt-2 text-blue-500 text-sm hover:underline" 
+                               title="Open video in new tab">View Video</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-red-500 mt-6">No videos found for the selected format.</p>
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'news' %}
+            {% if headlines %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ headlines|length }} headlines on this page.</h2>
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="data_type" value="news">
+                    
+                    <div class="mb-4">
+                        <label for="num_headlines" class="block text-lg">Number of headlines to display:</label>
+                        <input type="number" name="num_headlines" id="num_headlines" 
+                               value="{{ num_headlines|default(headlines|length) }}" 
+                               min="1" max="{{ headlines|length }}" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
+                </form>
+
+                <div class="mt-4">
+                    <ul class="list-disc pl-5 space-y-2">
+                        {% for headline in headlines %}
+                            <li class="text-gray-800">{{ headline|e }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <p class="text-red-500 mt-6">No verified headlines found for this page.</p>
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'pdf' %}
+            {% if pdf_links %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ pdf_links|length }} PDF files on this page:</h2>
+                <div class="mt-4">
+                    <ul class="space-y-2">
+                        {% for pdf in pdf_links %}
+                            <li class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm hover:shadow-md">
+                                <!-- PDF Name -->
+                                <span class="text-blue-600 hover:underline cursor-pointer pdf-name" data-url="{{ pdf.url|e }}">
+                                    {{ pdf.name|e }}
+                                </span>
+                                <!-- Buttons (hidden by default) -->
+                                <div class="pdf-buttons hidden space-x-2">
+                                    <a href="{{ pdf.url|e }}" download 
+                                       class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                        Download
+                                    </a>
+                                    <button onclick="extractInfo('{{ pdf.url|e }}')" 
+                                            class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                        Extract Info
+                                    </button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <p class="text-red-500 mt-6">No PDF files found on this page.</p>
+            {% endif %}
+        {% endif %}
+
+        {% if data_type == 'ebay' %}
+            {% if product_details %}
+                <h2 class="text-xl font-semibold mt-6">Found {{ product_details|length }} products on eBay.</h2>
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="url" value="{{ url }}">
+                    <input type="hidden" name="data_type" value="ebay">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="num_products" class="block text-lg">Number of products to display:</label>
+                            <input type="number" name="num_products" id="num_products" 
+                                value="{{ num_products|default(product_details|length) }}" 
+                                min="1" max="{{ product_details|length }}" 
+                                class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
+                </form>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
+                    {% for product in product_details %}
+                        <div class="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
+                            <img src="{{ product.image_url }}" alt="{{ product.title }}" 
+                                class="w-full h-48 object-cover rounded-lg" 
+                                loading="lazy" 
+                                onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Image+Failed';"
+                                onload="this.style.opacity='1';"
+                                style="opacity: 0.5; transition: opacity 0.3s;">
+                            <h3 class="text-lg font-semibold mt-2 text-center">{{ product.title }}</h3>
+                            <p class="text-gray-600 mt-1">{{ product.price }}</p>
+                            <p class="text-yellow-500 mt-1">{{ product.rating }}</p>
+                            <a href="{{ product.link }}" target="_blank" 
+                            class="mt-2 text-blue-500 text-sm hover:underline" 
+                            title="View on eBay">View on eBay</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-red-500 mt-6">{{ error }}</p>
+            {% endif %}
+        {% endif %}
+
+    </div>
+
+    <!-- Modal for displaying extracted PDF info -->
+    <div id="pdfInfoModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <h3 class="text-xl font-semibold mb-4">PDF Information</h3>
+            <div id="pdfInfoContent" class="flex-1 overflow-y-auto">
+                <div class="mb-4">
+                    <p class="mb-2"><strong>Title:</strong> <span id="pdfTitle" class="text-gray-700">N/A</span></p>
+                    <p class="mb-2"><strong>Author:</strong> <span id="pdfAuthor" class="text-gray-700">N/A</span></p>
+                    <p class="mb-2"><strong>Page Count:</strong> <span id="pdfPageCount" class="text-gray-700">N/A</span></p>
+                </div>
+                <div>
+                    <p class="mb-2"><strong>Extracted Text:</strong></p>
+                    <div id="pdfText" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-[50vh] overflow-y-auto"></div>
+                </div>
+            </div>
+            <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Existing JavaScript
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => {
+                document.getElementById('loading').classList.remove('hidden');
+            });
+        });
+        window.addEventListener('load', () => {
+            document.getElementById('loading').classList.add('hidden');
+        });
+        const dataType = document.getElementById('data_type');
+        const urlLabel = document.getElementById('url-label');
+        dataType.addEventListener('change', () => {
+            urlLabel.textContent = dataType.value === 'movie' ? 'Enter Movie Name:' : 'Enter URL:';
+        });
+
+        // JavaScript for PDF section
+        document.querySelectorAll('.pdf-name').forEach(pdf => {
+            pdf.addEventListener('click', (e) => {
+                // Hide all buttons first
+                document.querySelectorAll('.pdf-buttons').forEach(buttons => {
+                    buttons.classList.add('hidden');
+                });
+                // Show buttons for the clicked PDF
+                const buttons = e.target.parentElement.querySelector('.pdf-buttons');
+                if (buttons) {
+                    buttons.classList.remove('hidden');
+                }
+            });
+        });
+
+        function extractInfo(pdfUrl) {
+            // Show loading spinner while extracting
+            document.getElementById('loading').classList.remove('hidden');
+            
+            fetch('/extract_pdf_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'pdf_url': pdfUrl
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading spinner
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.success) {
+                    document.getElementById('pdfTitle').textContent = data.title;
+                    document.getElementById('pdfAuthor').textContent = data.author;
+                    document.getElementById('pdfPageCount').textContent = data.page_count;
+                    document.getElementById('pdfText').textContent = data.text || 'No text extracted.';
+                    document.getElementById('pdfInfoModal').classList.remove('hidden');
+                } else {
+                    alert('Error extracting info: ' + data.error);
+                }
+            })
+            .catch(error => {
+                // Hide loading spinner on error
+                document.getElementById('loading').classList.add('hidden');
+                alert('Error: ' + error);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('pdfInfoModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
