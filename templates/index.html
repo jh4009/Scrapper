@@ -5,395 +5,358 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Scraper</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 pt-6 pl-8 pr-8 pb-4">
-    <!-- Header with Logo on Left and RUET Logo on Right -->
-   
-<div class="site-primary-header-wrap ast-builder-grid-row-container site-header-focus-item ast-container" data-section="section-primary-header-builder">
-    <div class="ast-builder-grid-row ast-builder-grid-row-has-sides ast-builder-grid-row-no-center flex justify-between items-center">
-        <!-- Left Section with Existing Logo -->
-        <div class="site-header-primary-section-left site-header-section ast-flex site-header-section-left">
-            <div class="ast-builder-layout-element ast-flex site-header-focus-item" data-section="title_tagline">
-                <div class="site-branding ast-site-identity" itemtype="https://schema.org/Organization" itemscope="itemscope">
-                    <span class="site-logo-img"><a href="https://brainstation-23.com/" class="custom-logo-link" rel="home" aria-current="page"><img width="300" height="48" src="https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo-250x40.png" class="custom-logo" alt="Brain Station 23 PLC. | Professionals @ Your Service" decoding="async" srcset="https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo-250x40.png 1x, https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo.png 2x" sizes="(max-width: 250px) 100vw, 250px"></a></span>
-                </div> <!-- .site-branding -->
-            </div>
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <a href="https://brainstation-23.com/" target="_blank">
+                <img src="https://brainstation-23.com/wp-content/uploads/2024/08/bs23_logo-250x40.png" alt="Brain Station 23" class="h-10">
+            </a>
+            <img src="{{ url_for('static', filename='ruet.png') }}" alt="RUET Logo" class="h-12">
         </div>
-        <!-- Right Section with RUET Logo -->
-        <div class="site-header-primary-section-right site-header-section ast-flex site-header-section-right">
-            <div class="ast-builder-layout-element ast-flex site-header-focus-item">
-                <img src="{{ url_for('static', filename='ruet.png') }}" alt="RUET Logo" class="h-16 w-auto object-contain">
-            </div>
+    </header>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
+            <span class="text-white text-lg">Scraping...</span>
         </div>
     </div>
-</div>
 
-    <div id="loading" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
-    </div>
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-6 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-gray-900">Web Scraper</h1>
 
-    <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-semibold mb-6 text-center">Web Scraper</h1>
-
-        <form method="POST" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
-            <label for="url" class="block text-lg font-medium" id="url-label">Enter URL or Movie Name:</label>
-            <input type="text" id="url" name="url" required 
-                   class="w-full p-3 border border-gray-300 rounded-lg mb-4" 
-                   placeholder="Enter URL or Movie Name..." 
-                   aria-label="Enter URL or Movie Name">
-
-            <label for="data_type" class="block text-lg font-medium">Select Data Type:</label>
-            <select name="data_type" id="data_type" required 
-                    class="w-full p-3 border border-gray-300 rounded-lg mb-4" 
-                    aria-label="Select Data Type">
-                <option value="table">Table</option>
-                <option value="image">Image</option>
-                <option value="movie">Movie</option>
-                <option value="video">Video</option>
-                <option value="ebay">e-Bay Product</option>
-                <option value="news">News Headlines</option>
-                <option value="pdf">PDF Files</option>
-            </select>
-
-            <button type="submit" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">Scrape Data</button>
+        <!-- Form -->
+        <form id="scrape-form" class="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-lg fade-in">
+            <div class="mb-5">
+                <label for="url" id="url-label" class="block text-lg font-semibold text-gray-700 mb-2">Enter URL or Movie Name:</label>
+                <input type="text" id="url" name="url" required 
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                       placeholder="e.g., https://example.com or 'Inception'">
+            </div>
+            <div class="mb-5">
+                <label for="data_type" class="block text-lg font-semibold text-gray-700 mb-2">Select Data Type:</label>
+                <select name="data_type" id="data_type" required 
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="table">Tables</option>
+                    <option value="image">Images</option>
+                    <option value="movie">Movie Details</option>
+                    <option value="video">Videos</option>
+                    <option value="ebay">eBay Products</option>
+                    <option value="news">News Headlines</option>
+                    <option value="pdf">PDF Files</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Scrape Now</button>
         </form>
 
-        {% if error %}
-            <p class="text-red-500 text-center mt-4">{{ error }}</p>
-        {% endif %}
+        <!-- Results Area -->
+        <div id="results" class="mt-8"></div>
 
-        {% if data_type == 'table' %}
-            {% if tables %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ tables|length }} tables on this page.</h2>
-                <form method="POST" class="mt-4">
-                    <input type="hidden" name="url" value="{{ url }}">
-                    <input type="hidden" name="data_type" value="table">
-                    <label for="table_number" class="block text-lg">Select table(s) (hold Ctrl or Cmd to select multiple):</label>
-                    <select name="table_number" id="table_number" multiple 
-                            size="{{ tables|length }}" 
-                            class="w-full p-3 border border-gray-300 rounded-lg mb-4">
-                        {% for i in range(tables|length) %}
-                            <option value="{{ i }}" {% if i in selected_tables %}selected{% endif %}>Table {{ i + 1 }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Show Selected Tables</button>
-                </form>
-            {% endif %}
-
-            {% if selected_tables %}
-                {% for table_index in selected_tables %}
-                    <h3 class="text-xl font-semibold mt-6">Selected Table #{{ table_index + 1 }}:</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full border-collapse mb-6">
-                            <thead>
-                                <tr class="bg-gray-200">
-                                    {% for column in tables[table_index][0] %}
-                                        <th class="border border-gray-300 p-2 text-left">{{ column|e }}</th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in tables[table_index][1:] %}
-                                    <tr class="{{ loop.cycle('bg-white', 'bg-gray-50') }} hover:bg-gray-100">
-                                        {% for cell in row %}
-                                            <td class="border border-gray-300 p-2">{{ cell|e }}</td>
-                                        {% endfor %}
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endif %}
-
-        {% if data_type == 'image' %}
-            {% if images %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ images|length }} images on this page.</h2>
-                <form method="POST" class="mt-4">
-                    <input type="hidden" name="url" value="{{ url }}">
-                    <input type="hidden" name="data_type" value="image">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="num_images" class="block text-lg">Number of images to display:</label>
-                            <input type="number" name="num_images" id="num_images" 
-                                   value="{{ num_images|default(images|length) }}" 
-                                   min="1" max="{{ images|length }}" 
-                                   class="w-full p-3 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="image_format" class="block text-lg font-medium">Image Format:</label>
-                            <select name="image_format" id="image_format" 
-                                    class="w-full p-3 border border-gray-300 rounded-lg">
-                                <option value="all" {% if image_format == 'all' %}selected{% endif %}>All</option>
-                                <option value="png" {% if image_format == 'png' %}selected{% endif %}>PNG</option>
-                                <option value="jpg" {% if image_format == 'jpg' %}selected{% endif %}>JPG</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
-                </form>
-
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
-                    {% for img_url in images %}
-                        <div class="flex flex-col items-center">
-                            <img src="{{ img_url|e }}" alt="Scraped image" 
-                                 class="w-full max-w-xs h-auto border rounded-lg shadow-lg object-cover"
-                                 loading="lazy" 
-                                 onerror="this.src='/static/fallback.jpg';">
-                            <a href="{{ img_url|e }}" target="_blank" 
-                               class="mt-2 text-blue-500 text-sm hover:underline" 
-                               title="Open image in new tab">View Image</a>
-                        </div>
+        <!-- History -->
+        {% if history %}
+            <section class="mt-8 fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Recent Searches</h2>
+                <ul id="history-list" class="bg-white p-4 rounded-xl shadow-lg space-y-2">
+                    {% for item in history %}
+                        <li class="text-gray-700">{{ item.url }} ({{ item.data_type|capitalize }})</li>
                     {% endfor %}
-                </div>
-            {% endif %}
+                </ul>
+            </section>
         {% endif %}
+    </main>
 
-        {% if data_type == 'movie' %}
-            {% if movie_data %}
-                <div class="mt-6 bg-white p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4">Movie Details</h2>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <img src="{{ movie_data.poster_url|e }}" alt="{{ movie_data.name|e }} poster" 
-                             class="w-48 h-auto rounded-lg object-cover">
-                        <div>
-                            <p><strong>Movie Name:</strong> {{ movie_data.name|e }}</p>
-                            <p><strong>Year:</strong> {{ movie_data.year|e }}</p>
-                            <p><strong>Rating:</strong> {{ movie_data.rating|e }}</p>
-                            <p><strong>Plot:</strong> {{ movie_data.plot|e }}</p>
-                            <p><strong>Genre:</strong> {{ movie_data.genre|e }}</p>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-        {% endif %}
-
-        {% if data_type == 'video' %}
-            {% if video_data %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ video_data|length }} videos on this page.</h2>
-                <form method="POST" class="mt-4">
-                    <input type="hidden" name="url" value="{{ url }}">
-                    <input type="hidden" name="data_type" value="video">
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="num_videos" class="block text-lg">Number of videos to display:</label>
-                            <input type="number" name="num_videos" id="num_videos" 
-                                   value="{{ num_videos|default(video_data|length) }}" 
-                                   min="1" max="{{ video_data|length }}" 
-                                   class="w-full p-3 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="video_format" class="block text-lg font-medium">Video Format:</label>
-                            <select name="video_format" id="video_format" 
-                                    class="w-full p-3 border border-gray-300 rounded-lg">
-                                <option value="all" {% if video_format == 'all' %}selected{% endif %}>All</option>
-                                <option value="mp4" {% if video_format == 'mp4' %}selected{% endif %}>MP4</option>
-                                <option value="webm" {% if video_format == 'webm' %}selected{% endif %}>WEBM</option>
-                                <option value="ogg" {% if video_format == 'ogg' %}selected{% endif %}>OGG</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
-                </form>
-
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
-                    {% for video_url in video_data %}
-                        <div class="flex flex-col items-center">
-                            <video width="320" height="240" controls loading="lazy" 
-                                   class="w-full max-w-xs h-auto border rounded-lg shadow-lg object-cover">
-                                <source src="{{ video_url|e }}" type="video/{{ video_format|default('mp4') }}">
-                                Your browser does not support the video tag.
-                            </video>
-                            <a href="{{ video_url|e }}" target="_blank" 
-                               class="mt-2 text-blue-500 text-sm hover:underline" 
-                               title="Open video in new tab">View Video</a>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-red-500 mt-6">No videos found for the selected format.</p>
-            {% endif %}
-        {% endif %}
-
-        {% if data_type == 'news' %}
-            {% if headlines %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ headlines|length }} headlines on this page.</h2>
-                <form method="POST" class="mt-4">
-                    <input type="hidden" name="url" value="{{ url }}">
-                    <input type="hidden" name="data_type" value="news">
-                    
-                    <div class="mb-4">
-                        <label for="num_headlines" class="block text-lg">Number of headlines to display:</label>
-                        <input type="number" name="num_headlines" id="num_headlines" 
-                               value="{{ num_headlines|default(headlines|length) }}" 
-                               min="1" max="{{ headlines|length }}" 
-                               class="w-full p-3 border border-gray-300 rounded-lg">
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
-                </form>
-
-                <div class="mt-4">
-                    <ul class="list-disc pl-5 space-y-2">
-                        {% for headline in headlines %}
-                            <li class="text-gray-800">{{ headline|e }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% else %}
-                <p class="text-red-500 mt-6">No verified headlines found for this page.</p>
-            {% endif %}
-        {% endif %}
-
-        {% if data_type == 'pdf' %}
-            {% if pdf_links %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ pdf_links|length }} PDF files on this page:</h2>
-                <div class="mt-4">
-                    <ul class="space-y-2">
-                        {% for pdf in pdf_links %}
-                            <li class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm hover:shadow-md">
-                                <!-- PDF Name -->
-                                <span class="text-blue-600 hover:underline cursor-pointer pdf-name" data-url="{{ pdf.url|e }}">
-                                    {{ pdf.name|e }}
-                                </span>
-                                <!-- Buttons (hidden by default) -->
-                                <div class="pdf-buttons hidden space-x-2">
-                                    <a href="{{ pdf.url|e }}" download 
-                                       class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                                        Download
-                                    </a>
-                                    <button onclick="extractInfo('{{ pdf.url|e }}')" 
-                                            class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                        Extract Info
-                                    </button>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% else %}
-                <p class="text-red-500 mt-6">No PDF files found on this page.</p>
-            {% endif %}
-        {% endif %}
-
-        {% if data_type == 'ebay' %}
-            {% if product_details %}
-                <h2 class="text-xl font-semibold mt-6">Found {{ product_details|length }} products on eBay.</h2>
-                <form method="POST" class="mt-4">
-                    <input type="hidden" name="url" value="{{ url }}">
-                    <input type="hidden" name="data_type" value="ebay">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="num_products" class="block text-lg">Number of products to display:</label>
-                            <input type="number" name="num_products" id="num_products" 
-                                value="{{ num_products|default(product_details|length) }}" 
-                                min="1" max="{{ product_details|length }}" 
-                                class="w-full p-3 border border-gray-300 rounded-lg">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Update Display</button>
-                </form>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" style="max-height: 400px; overflow-y: auto;">
-                    {% for product in product_details %}
-                        <div class="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
-                            <img src="{{ product.image_url }}" alt="{{ product.title }}" 
-                                class="w-full h-48 object-cover rounded-lg" 
-                                loading="lazy" 
-                                onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Image+Failed';"
-                                onload="this.style.opacity='1';"
-                                style="opacity: 0.5; transition: opacity 0.3s;">
-                            <h3 class="text-lg font-semibold mt-2 text-center">{{ product.title }}</h3>
-                            <p class="text-gray-600 mt-1">{{ product.price }}</p>
-                            <p class="text-yellow-500 mt-1">{{ product.rating }}</p>
-                            <a href="{{ product.link }}" target="_blank" 
-                            class="mt-2 text-blue-500 text-sm hover:underline" 
-                            title="View on eBay">View on eBay</a>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-red-500 mt-6">{{ error }}</p>
-            {% endif %}
-        {% endif %}
-
-    </div>
-
-    <!-- Modal for displaying extracted PDF info -->
+    <!-- PDF Modal -->
     <div id="pdfInfoModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
             <h3 class="text-xl font-semibold mb-4">PDF Information</h3>
             <div id="pdfInfoContent" class="flex-1 overflow-y-auto">
-                <div class="mb-4">
-                    <p class="mb-2"><strong>Title:</strong> <span id="pdfTitle" class="text-gray-700">N/A</span></p>
-                    <p class="mb-2"><strong>Author:</strong> <span id="pdfAuthor" class="text-gray-700">N/A</span></p>
-                    <p class="mb-2"><strong>Page Count:</strong> <span id="pdfPageCount" class="text-gray-700">N/A</span></p>
-                </div>
-                <div>
-                    <p class="mb-2"><strong>Extracted Text:</strong></p>
-                    <div id="pdfText" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-[50vh] overflow-y-auto"></div>
-                </div>
+                <p><strong>Title:</strong> <span id="pdfTitle">N/A</span></p>
+                <p><strong>Author:</strong> <span id="pdfAuthor">N/A</span></p>
+                <p><strong>Page Count:</strong> <span id="pdfPageCount">N/A</span></p>
+                <p class="mt-2"><strong>Text:</strong></p>
+                <div id="pdfText" class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border"></div>
             </div>
             <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Close</button>
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-6 text-center">
+            <p>© 2025 Web Scraper. All rights reserved.</p>
+        </div>
+    </footer>
+
     <script>
-        // Existing JavaScript
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', () => {
-                document.getElementById('loading').classList.remove('hidden');
-            });
-        });
-        window.addEventListener('load', () => {
-            document.getElementById('loading').classList.add('hidden');
-        });
-        const dataType = document.getElementById('data_type');
-        const urlLabel = document.getElementById('url-label');
-        dataType.addEventListener('change', () => {
-            urlLabel.textContent = dataType.value === 'movie' ? 'Enter Movie Name:' : 'Enter URL:';
+        const form = document.getElementById('scrape-form');
+        const resultsDiv = document.getElementById('results');
+        const historyList = document.getElementById('history-list') || document.createElement('ul');
+
+        async function scrapeData(formData) {
+            document.getElementById('loading').classList.remove('hidden');
+            resultsDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                document.getElementById('loading').classList.add('hidden');
+
+                if (!data.success) {
+                    resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">${data.error}</div>`;
+                    return;
+                }
+
+                // Update history
+                const historyItem = `${formData.get('url')} (${formData.get('data_type').charAt(0).toUpperCase() + formData.get('data_type').slice(1)})`;
+                const li = document.createElement('li');
+                li.className = 'text-gray-700';
+                li.textContent = historyItem;
+                historyList.insertBefore(li, historyList.firstChild);
+                if (historyList.children.length > 5) historyList.removeChild(historyList.lastChild);
+
+                // Render results based on data type
+                if (data.tables) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.tables.length} Tables</h2>`;
+                    html += `<div class="bg-white p-4 rounded-xl shadow-lg sticky top-0 z-10">`;
+                    html += `<select id="table-select" multiple size="5" class="w-full p-3 border border-gray-300 rounded-lg mb-4">`;
+                    data.tables.forEach((_, i) => html += `<option value="${i}">Table ${i + 1}</option>`);
+                    html += `</select>`;
+                    html += `<button id="show-tables" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Show Selected</button>`;
+                    html += `<form id="export-csv-form" method="POST" action="/export_csv" class="mt-4"><input type="hidden" name="url" value="${formData.get('url')}"></form>`;
+                    html += `</div>`;
+                    html += `<div id="table-results" class="mt-4"></div>`;
+                    resultsDiv.innerHTML = html;
+
+                    const tableResultsDiv = document.getElementById('table-results');
+                    const exportForm = document.getElementById('export-csv-form');
+
+                    function renderSelectedTables() {
+                        const selected = Array.from(document.getElementById('table-select').selectedOptions).map(opt => parseInt(opt.value));
+                        let tableHtml = '';
+                        selected.forEach(idx => {
+                            tableHtml += `<h3 class="text-xl font-semibold mt-6">Table #${idx + 1}</h3>`;
+                            tableHtml += `<table class="min-w-full border-collapse bg-white rounded-lg shadow-lg">`;
+                            tableHtml += `<thead class="bg-gray-200"><tr>`;
+                            data.tables[idx][0].forEach(col => tableHtml += `<th class="border border-gray-300 p-3 text-left">${col}</th>`);
+                            tableHtml += `</tr></thead><tbody>`;
+                            data.tables[idx].slice(1).forEach(row => {
+                                tableHtml += `<tr class="hover:bg-gray-50">`;
+                                row.forEach(cell => tableHtml += `<td class="border border-gray-300 p-3">${cell}</td>`);
+                                tableHtml += `</tr>`;
+                            });
+                            tableHtml += `</tbody></table>`;
+                        });
+                        tableResultsDiv.innerHTML = tableHtml;
+                        exportForm.innerHTML = `<input type="hidden" name="url" value="${formData.get('url')}">` + 
+                                               selected.map(idx => `<input type="hidden" name="table_number" value="${idx}">`).join('') +
+                                               (selected.length ? `<button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Export as CSV</button>` : '');
+                    }
+
+                    document.getElementById('show-tables').addEventListener('click', renderSelectedTables);
+                    document.getElementById('table-select').addEventListener('change', renderSelectedTables);
+                } else if (data.images) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.images.length} Images (Total: ${data.total})</h2>`;
+                    html += `<form id="image-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="image">`;
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
+                    html += `<div><label class="block text-lg font-semibold mb-2">Number of Images:</label>`;
+                    html += `<input type="number" name="num_items" value="${data.images.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg">`;
+                    html += `<p id="num-items-error" class="text-red-500 text-sm mt-1 hidden">Number must be between 1 and ${data.total}.</p></div>`;
+                    html += `<div><label class="block text-lg font-semibold mb-2">Format:</label>`;
+                    html += `<select name="image_format" class="w-full p-3 border border-gray-300 rounded-lg">`;
+                    html += `<option value="all" ${data.image_format === 'all' ? 'selected' : ''}>All</option>`;
+                    html += `<option value="png" ${data.image_format === 'png' ? 'selected' : ''}>PNG</option>`;
+                    html += `<option value="jpg" ${data.image_format === 'jpg' ? 'selected' : ''}>JPG</option>`;
+                    html += `</select></div></div>`;
+                    html += `<div class="flex space-x-4">`;
+                    html += `<button type="submit" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button>`;
+                    html += `<button type="submit" form="export-images-form" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Export as ZIP</button>`;
+                    html += `</div></form>`;
+                    html += `<form id="export-images-form" method="POST" action="/export_images" class="hidden">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="image_format" value="${data.image_format}">`;
+                    html += `<input type="hidden" name="num_items" value="${data.images.length}">`;
+                    html += `</form>`;
+                    html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">`;
+                    data.images.forEach(url => {
+                        html += `<div class="flex flex-col items-center">`;
+                        html += `<img src="${url}" alt="Scraped image" class="w-full max-w-xs h-auto rounded-lg shadow-lg object-cover" loading="lazy">`;
+                        html += `<a href="${url}" target="_blank" class="mt-2 text-blue-500 hover:underline">View</a></div>`;
+                    });
+                    html += `</div>`;
+                    resultsDiv.innerHTML = html;
+
+                    const imageFilterForm = document.getElementById('image-filter');
+                    const numItemsInput = imageFilterForm.querySelector('input[name="num_items"]');
+                    const exportForm = document.getElementById('export-images-form');
+                    const numItemsError = document.getElementById('num-items-error');
+
+                    // Update export form's num_items when input changes
+                    numItemsInput.addEventListener('input', () => {
+                        const value = parseInt(numItemsInput.value);
+                        const max = parseInt(numItemsInput.max);
+                        if (value > max) {
+                            numItemsError.classList.remove('hidden');
+                            numItemsInput.classList.add('border-red-500');
+                        } else {
+                            numItemsError.classList.add('hidden');
+                            numItemsInput.classList.remove('border-red-500');
+                            exportForm.querySelector('input[name="num_items"]').value = value;
+                        }
+                    });
+
+                    imageFilterForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const value = parseInt(numItemsInput.value);
+                        const max = parseInt(numItemsInput.max);
+                        if (value > max) {
+                            numItemsError.classList.remove('hidden');
+                            numItemsInput.classList.add('border-red-500');
+                            return; // Prevent form submission
+                        }
+                        if (e.submitter.textContent === "Update Display") {
+                            scrapeData(new FormData(e.target));
+                        }
+                        // Export as ZIP will proceed normally via form submission
+                    });
+                } else if (data.movie_data) {
+                    const m = data.movie_data;
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Movie Details</h2>`;
+                    html += `<div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">`;
+                    html += `<img src="${m.poster_url}" alt="${m.name}" class="w-48 h-auto rounded-lg object-cover">`;
+                    html += `<div><p><strong>Name:</strong> ${m.name}</p><p><strong>Year:</strong> ${m.year}</p>`;
+                    html += `<p><strong>Rating:</strong> ${m.rating}</p><p><strong>Plot:</strong> ${m.plot}</p>`;
+                    html += `<p><strong>Genre:</strong> ${m.genre}</p></div></div>`;
+                    resultsDiv.innerHTML = html;
+                } else if (data.videos) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.videos.length} Videos (Total: ${data.total})</h2>`;
+                    html += `<form id="video-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="video">`;
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
+                    html += `<div><label class="block text-lg font-semibold mb-2">Number of Videos:</label>`;
+                    html += `<input type="number" name="num_items" value="${data.videos.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
+                    html += `<div><label class="block text-lg font-semibold mb-2">Format:</label>`;
+                    html += `<select name="video_format" class="w-full p-3 border border-gray-300 rounded-lg">`;
+                    html += `<option value="all" ${data.video_format === 'all' ? 'selected' : ''}>All</option>`;
+                    html += `<option value="mp4" ${data.video_format === 'mp4' ? 'selected' : ''}>MP4</option>`;
+                    html += `<option value="webm" ${data.video_format === 'webm' ? 'selected' : ''}>WEBM</option>`;
+                    html += `<option value="ogg" ${data.video_format === 'ogg' ? 'selected' : ''}>OGG</option>`;
+                    html += `</select></div></div>`;
+                    html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
+                    html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">`;
+                    data.videos.forEach(url => {
+                        html += `<div class="flex flex-col items-center">`;
+                        html += `<video width="320" height="240" controls class="w-full max-w-xs h-auto rounded-lg shadow-lg">`;
+                        html += `<source src="${url}" type="valueideo/${url.split('.').pop()}"></video>`;
+                        html += `<a href="${url}" target="_blank" class="mt-2 text-blue-500 hover:underline">View</a></div>`;
+                    });
+                    html += `</div>`;
+                    resultsDiv.innerHTML = html;
+                    document.getElementById('video-filter').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        scrapeData(new FormData(e.target));
+                    });
+                } else if (data.product_details) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.product_details.length} Products (Total: ${data.total})</h2>`;
+                    html += `<form id="product-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="ebay">`;
+                    html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of Products:</label>`;
+                    html += `<input type="number" name="num_items" value="${data.product_details.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
+                    html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">`;
+                    data.product_details.forEach(p => {
+                        html += `<div class="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">`;
+                        html += `<img src="${p.image_url}" alt="${p.title}" class="w-full h-48 object-cover rounded-lg" loading="lazy">`;
+                        html += `<h3 class="text-lg font-semibold mt-2 text-center">${p.title}</h3>`;
+                        html += `<p class="text-gray-600">${p.price}</p><p class="text-yellow-500">${p.rating}</p>`;
+                        html += `<a href="${p.link}" target="_blank" class="mt-2 text-blue-500 hover:underline">View on eBay</a></div>`;
+                    });
+                    html += `</div>`;
+                    resultsDiv.innerHTML = html;
+                    document.getElementById('product-filter').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        scrapeData(new FormData(e.target));
+                    });
+                } else if (data.headlines) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.headlines.length} Headlines (Total: ${data.total})</h2>`;
+                    html += `<form id="headline-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="news">`;
+                    html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of Headlines:</label>`;
+                    html += `<input type="number" name="num_items" value="${data.headlines.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
+                    html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
+                    html += `<ul class="mt-4 list-disc pl-5 space-y-2">`;
+                    data.headlines.forEach(h => html += `<li class="text-gray-700">${h}</li>`);
+                    html += `</ul>`;
+                    resultsDiv.innerHTML = html;
+                    document.getElementById('headline-filter').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        scrapeData(new FormData(e.target));
+                    });
+                } else if (data.pdf_links) {
+                    let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.pdf_links.length} PDFs (Total: ${data.total})</h2>`;
+                    html += `<form id="pdf-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="pdf">`;
+                    html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of PDFs:</label>`;
+                    html += `<input type="number" name="num_items" value="${data.pdf_links.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
+                    html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
+                    html += `<ul class="space-y-2 mt-4">`;
+                    data.pdf_links.forEach(pdf => {
+                        html += `<li class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm hover:shadow-md">`;
+                        html += `<span class="text-blue-600 hover:underline cursor-pointer pdf-name" data-url="${pdf.url}">${pdf.name}</span>`;
+                        html += `<div class="pdf-buttons hidden space-x-2">`;
+                        html += `<a href="${pdf.url}" download class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Download</a>`;
+                        html += `<button onclick="extractInfo('${pdf.url}')" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Extract Info</button>`;
+                        html += `</div></li>`;
+                    });
+                    html += `</ul>`;
+                    resultsDiv.innerHTML = html;
+                    document.querySelectorAll('.pdf-name').forEach(pdf => {
+                        pdf.addEventListener('click', (e) => {
+                            document.querySelectorAll('.pdf-buttons').forEach(btn => btn.classList.add('hidden'));
+                            e.target.nextElementSibling.classList.remove('hidden');
+                        });
+                    });
+                    document.getElementById('pdf-filter').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        scrapeData(new FormData(e.target));
+                    });
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">Error: ${error.message}</div>`;
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            scrapeData(new FormData(form));
         });
 
-        // JavaScript for PDF section
-        document.querySelectorAll('.pdf-name').forEach(pdf => {
-            pdf.addEventListener('click', (e) => {
-                // Hide all buttons first
-                document.querySelectorAll('.pdf-buttons').forEach(buttons => {
-                    buttons.classList.add('hidden');
-                });
-                // Show buttons for the clicked PDF
-                const buttons = e.target.parentElement.querySelector('.pdf-buttons');
-                if (buttons) {
-                    buttons.classList.remove('hidden');
-                }
-            });
+        document.getElementById('data_type').addEventListener('change', (e) => {
+            document.getElementById('url-label').textContent = e.target.value === 'movie' ? 'Enter Movie Name:' : 'Enter URL:';
         });
 
         function extractInfo(pdfUrl) {
-            // Show loading spinner while extracting
             document.getElementById('loading').classList.remove('hidden');
-            
             fetch('/extract_pdf_info', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    'pdf_url': pdfUrl
-                })
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({'pdf_url': pdfUrl})
             })
             .then(response => response.json())
             .then(data => {
-                // Hide loading spinner
                 document.getElementById('loading').classList.add('hidden');
-                
                 if (data.success) {
                     document.getElementById('pdfTitle').textContent = data.title;
                     document.getElementById('pdfAuthor').textContent = data.author;
@@ -401,11 +364,10 @@
                     document.getElementById('pdfText').textContent = data.text || 'No text extracted.';
                     document.getElementById('pdfInfoModal').classList.remove('hidden');
                 } else {
-                    alert('Error extracting info: ' + data.error);
+                    alert('Error: ' + data.error);
                 }
             })
             .catch(error => {
-                // Hide loading spinner on error
                 document.getElementById('loading').classList.add('hidden');
                 alert('Error: ' + error);
             });
