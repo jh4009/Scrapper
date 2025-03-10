@@ -85,43 +85,69 @@ def scrape_images(url, image_format):
         logger.error(f"Error fetching {url}: {e}")
         return None
 
+import requests
+from bs4 import BeautifulSoup
+
 def scrape_movie_details(movie_name):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
     try:
+        # IMDb search URL
         search_url = f"https://www.imdb.com/find?q={movie_name.replace(' ', '+')}&ref_=nv_sr_sm"
         search_response = requests.get(search_url, headers=headers, timeout=10)
         search_response.raise_for_status()
+        
         search_soup = BeautifulSoup(search_response.content, 'html.parser')
-        first_result = search_soup.select_one('.ipc-metadata-list-summary-item a.ipc-metadata-list-summary-item__t')
+        first_result = search_soup.select_one('.ipc-metadata-list-summary-item a')
         if not first_result:
             return {"error": "No movie found with that name."}
-        movie_url = "https://www.imdb.com" + first_result['href']
+        
+        movie_url = "https://www.imdb.com" + first_result.get('href', '')
         movie_response = requests.get(movie_url, headers=headers, timeout=10)
         movie_response.raise_for_status()
+        
         soup = BeautifulSoup(movie_response.content, 'html.parser')
-        title = soup.select_one('h1').text.strip()
-        poster = soup.select_one('img.ipc-image')
-        poster_url = poster['src'] if poster else "N/A"
+        
+        # Extracting Title
+        title_elem = soup.select_one('h1')
+        title = title_elem.text.strip() if title_elem else "N/A"
+        
+        # Extracting Poster URL
+        poster_elem = soup.select_one('img.ipc-image')
+        poster_url = poster_elem.get('src', "N/A") if poster_elem else "N/A"
+        
+        # Extracting Year
         year_elem = soup.select_one('a[href*="/releaseinfo"]')
         year = year_elem.text.strip() if year_elem else "N/A"
+        
+        # Extracting Rating
         rating_elem = soup.select_one('div[data-testid="hero-rating-bar__aggregate-rating__score"] span')
-        rating = rating_elem.text.strip() + "/10" if rating_elem else "N/A"
-        plot_elem = soup.select_one('[data-testid="plot"]')
+        rating = f"{rating_elem.text.strip()}/10" if rating_elem else "N/A"
+        
+        # Extracting Plot (more specific and avoiding duplicates)
+        plot_elem = soup.select_one('span[data-testid="plot-xl"]')
         plot = plot_elem.text.strip() if plot_elem else "N/A"
-        genre_elem = soup.select_one('.ipc-chip.ipc-chip--on-baseAlt .ipc-chip__text')
-        genre = genre_elem.text.strip() if genre_elem else "N/A"
+        
+        # Extracting Genres (Multiple if available)
+        genre_elems = soup.select('.ipc-chip__text')
+        genres = [genre.text.strip() for genre in genre_elems] if genre_elems else ["N/A"]
+        
         return {
             "name": title,
             "poster_url": poster_url,
             "year": year,
             "rating": rating,
             "plot": plot,
-            "genre": genre,
+            "genre": ', '.join(genres),
             "movie_link": movie_url
         }
+        
     except requests.exceptions.RequestException as e:
         return {"error": f"Network error: {e}"}
-    
+    except Exception as e:
+        return {"error": f"An unexpected error occurred: {e}"}
+
     
 def scrape_book_details(book_name):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"}
