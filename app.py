@@ -116,7 +116,8 @@ def scrape_movie_details(movie_name):
             "year": year,
             "rating": rating,
             "plot": plot,
-            "genre": genre
+            "genre": genre,
+            "movie_link": movie_url
         }
     except requests.exceptions.RequestException as e:
         return {"error": f"Network error: {e}"}
@@ -159,7 +160,6 @@ def scrape_book_details(book_name):
         
         description_elem = detail_soup.select_one('div.read-more__content')
         if description_elem:
-            # Extract all <p> tags and join their text, excluding source link
             paragraphs = [p.text.strip() for p in description_elem.find_all('p') if not p.find('a')]
             description = " ".join(paragraphs) if paragraphs else "N/A"
         else:
@@ -171,7 +171,8 @@ def scrape_book_details(book_name):
             "author": author,
             "year": year,
             "rating": rating,
-            "description": description
+            "description": description,
+            "book_link": detail_url # Add the detail URL to the response
         }
     except requests.exceptions.RequestException as e:
         return {"error": f"Network error: {e}"}
@@ -217,7 +218,7 @@ def scrape_ebay_product(product_name):
         if not product_listings:
             logger.warning("No product listings found with standard selector, trying fallback.")
             product_listings = soup.select('li[data-viewport]')
-        for product in product_listings:
+        for product in product_listings[2:]:
             try:
                 title_elem = product.select_one('.s-item__title')
                 title = title_elem.text.strip() if title_elem else "N/A"
