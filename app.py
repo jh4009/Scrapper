@@ -309,10 +309,20 @@ def scrape():
     url = request.form.get('url')
     data_type = request.form.get('data_type')
     num_items = request.form.get('num_items', type=int)
+    api_link = request.form.get('api_link')
+
+    if not url or not data_type or not api_link:
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
     if data_type == 'table':
         tables = scrape_tables_cached(url)
         if tables:
+            try:
+                response = requests.post(api_link, json={'data': tables})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'tables': tables})
         return jsonify({'success': False, 'error': 'No tables found.'})
 
@@ -322,12 +332,24 @@ def scrape():
         if images:
             num_items = num_items or len(images)
             images = images[:min(int(num_items), len(images))]
+            try:
+                response = requests.post(api_link, json={'data': images})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'images': list(images), 'image_format': image_format, 'total': len(images)})
         return jsonify({'success': False, 'error': 'No images found.'})
 
     elif data_type == 'movie':
         movie_data = scrape_movie_details(url)
         if "error" in movie_data:
+            try:
+                response = requests.post(api_link, json={'data': movie_data})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': False, 'error': movie_data["error"]})
         return jsonify({'success': True, 'movie_data': movie_data})
 
@@ -337,6 +359,12 @@ def scrape():
         if videos:
             num_items = num_items or len(videos)
             videos = videos[:min(int(num_items), len(videos))]
+            try:
+                response = requests.post(api_link, json={'data': videos})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e: 
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'videos': list(videos), 'video_format': video_format, 'total': len(videos)})
         return jsonify({'success': False, 'error': 'No videos found.'})
 
@@ -345,6 +373,12 @@ def scrape():
         if product_details:
             num_items = num_items or len(product_details)
             product_details = product_details[:min(int(num_items), len(product_details))]
+            try:
+                response = requests.post(api_link, json={'data': product_details})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'product_details': product_details, 'total': len(product_details)})
         return jsonify({'success': False, 'error': 'No products found on eBay.'})
 
@@ -353,6 +387,12 @@ def scrape():
         if headlines:
             num_items = num_items or len(headlines)
             headlines = headlines[:min(int(num_items), len(headlines))]
+            try:
+                response = requests.post(api_link, json={'data': headlines})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'headlines': list(headlines), 'total': len(headlines)})
         return jsonify({'success': False, 'error': 'No headlines found.'})
 
@@ -361,6 +401,12 @@ def scrape():
         if pdf_links:
             num_items = num_items or len(pdf_links)
             pdf_links = pdf_links[:min(int(num_items), len(pdf_links))]
+            try:
+                response = requests.post(api_link, json={'data': pdf_links})
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error sending data to API: {e}")
+                return jsonify({'success': False, 'error': f"Error sending data to API: {e}"}), 500
             return jsonify({'success': True, 'pdf_links': pdf_links, 'total': len(pdf_links)})
         return jsonify({'success': False, 'error': 'No PDFs found.'})
 
