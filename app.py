@@ -99,6 +99,63 @@ def scrape_movie_details(movie_name):
         }
     except requests.exceptions.RequestException as e:
         return {"error": f"Network error: {e}"}
+    
+    
+def scrape_book_details(book_name):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"}
+    try:
+        # Step 1: Search OpenLibrary for the book
+        search_url = f"https://openlibrary.org/search?q={book_name.replace(' ', '+')}&mode=everything"
+        search_response = requests.get(search_url, headers=headers, timeout=10)
+        search_response.raise_for_status()
+        search_soup = BeautifulSoup(search_response.content, 'html.parser')
+        first_result = search_soup.select_one('li.searchResultItem')
+        if not first_result:
+            return {"error": "No book found with that name."}
+        
+        # Extract basic details from search result
+        title_elem = first_result.select_one('h3.booktitle a')
+        title = title_elem.text.strip() if title_elem else "N/A"
+
+        cover_elem = first_result.select_one('span.bookcover img')
+        cover_url = "https:" + cover_elem['src'] if cover_elem else "N/A"
+
+        author_elem = first_result.select_one('span.bookauthor a')
+        author = author_elem.text.strip() if author_elem else "N/A"
+
+        year_elem = first_result.select_one('span.resultDetails span')
+        year = year_elem.text.strip().replace("First published in ", "") if year_elem else "N/A"
+
+        rating_elem = first_result.select_one('span.ratingsByline span[itemprop="ratingValue"]')
+        rating = rating_elem.text.strip() if rating_elem else "N/A"
+
+        # Step 2: Follow the link to the detail page for description
+        book_link = first_result.select_one('h3.booktitle a')['href']
+        detail_url = f"https://openlibrary.org{book_link}"
+        detail_response = requests.get(detail_url, headers=headers, timeout=10)
+        detail_response.raise_for_status()
+        detail_soup = BeautifulSoup(detail_response.content, 'html.parser')
+        
+        description_elem = detail_soup.select_one('div.read-more__content')
+        if description_elem:
+            # Extract all <p> tags and join their text, excluding source link
+            paragraphs = [p.text.strip() for p in description_elem.find_all('p') if not p.find('a')]
+            description = " ".join(paragraphs) if paragraphs else "N/A"
+        else:
+            description = "N/A"
+
+        return {
+            "name": title,
+            "cover_url": cover_url,
+            "author": author,
+            "year": year,
+            "rating": rating,
+            "description": description
+        }
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Network error: {e}"}
+    except Exception as e:
+        return {"error": f"An error occurred: {e}"}
 
 def scrape_videos(url, video_format):
     try:
@@ -330,6 +387,12 @@ def scrape():
         if "error" in movie_data:
             return jsonify({'success': False, 'error': movie_data["error"]})
         return jsonify({'success': True, 'movie_data': movie_data})
+    
+    elif data_type == 'book':
+        book_data = scrape_book_details(url) 
+        if "error" in book_data:
+            return jsonify({'success': False, 'error': book_data["error"]})
+        return jsonify({'success': True, 'book_data': book_data})
 
     elif data_type == 'video':
         video_format = request.form.get('video_format', 'all')
