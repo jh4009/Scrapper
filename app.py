@@ -217,7 +217,7 @@ def scrape_ebay_product(product_name):
         if not product_listings:
             logger.warning("No product listings found with standard selector, trying fallback.")
             product_listings = soup.select('li[data-viewport]')
-        for product in product_listings:
+        for product in product_listings[2:]:
             try:
                 title_elem = product.select_one('.s-item__title')
                 title = title_elem.text.strip() if title_elem else "N/A"
