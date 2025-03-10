@@ -16,6 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import pdfplumber
+from urllib.parse import urljoin
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -43,23 +44,43 @@ def scrape_tables(url):
         logger.error(f"Error fetching {url}: {e}")
         return None
 
-@lru_cache(maxsize=100)
-def scrape_images_cached(url, image_format):
+def scrape_images(url, image_format):
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
-        images = soup.find_all('img')
-        allowed_formats = {'png': ['.png'], 'jpg': ['.jpg', '.jpeg'], 'all': ['.png', '.jpg', '.jpeg']}
+        # Include both <img> and <image> tags
+        images = soup.find_all(['img', 'image'])
+        allowed_formats = {
+            'png': ['.png'],
+            'jpg': ['.jpg', '.jpeg'],
+            'webp': ['.webp'],
+            'gif': ['.gif'],
+            'all': ['.png', '.jpg', '.jpeg', '.webp', '.gif']
+        }
         image_urls = []
         for img in images:
-            img_url = img.get('src')
-            if img_url and any(img_url.endswith(ext) for ext in allowed_formats[image_format]):
-                if not img_url.startswith('http'):
-                    base_url = url.rsplit('/', 1)[0]
-                    img_url = os.path.join(base_url, img_url)
-                image_urls.append(img_url)
-        return tuple(image_urls)
+            # Check multiple attributes for image source
+            img_url = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
+            if img_url and any(img_url.lower().endswith(ext) for ext in allowed_formats[image_format]):
+                full_url = urljoin(url, img_url)
+                image_urls.append(full_url)
+        if not image_urls:  # Fallback to Selenium for dynamic content
+            logger.info(f"No images found with BS4 at {url}, trying Selenium")
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "img")))
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            images = soup.find_all(['img', 'image'])
+            for img in images:
+                img_url = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
+                if img_url and any(img_url.lower().endswith(ext) for ext in allowed_formats[image_format]):
+                    full_url = urljoin(url, img_url)
+                    image_urls.append(full_url)
+            driver.quit()
+        return image_urls if image_urls else None
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
         return None
@@ -199,7 +220,6 @@ def scrape_news_headlines(url):
         return None
 
 def scrape_pdf_links(url):
-    # First try with BeautifulSoup (BS4)
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"}
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -218,62 +238,26 @@ def scrape_pdf_links(url):
     except requests.exceptions.RequestException as e:
         logger.error(f"BS4 request failed: {e}")
 
-    # If no PDFs found with BS4, fall back to Selenium
     logger.info("No PDFs found with BS4, falling back to Selenium")
-    
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-
-    driver = None
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-        driver.set_page_load_timeout(30)
-        logger.info(f"Navigating to URL: {url}")
         driver.get(url)
-
-        # Wait for the page to load and check for buttons that might reveal PDFs
-        try:
-            potential_buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'Documents') or contains(text(), 'Resources') or contains(text(), 'Show More')]")
-            for button in potential_buttons:
-                try:
-                    logger.info(f"Clicking button with text: {button.text}")
-                    button.click()
-                    WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "a"))
-                    )
-                    break
-                except Exception as e:
-                    logger.warning(f"Could not click button '{button.text}': {e}")
-        except Exception as e:
-            logger.warning(f"No relevant buttons found to click: {e}")
-
-        # Wait for <a> tags to ensure the page is fully loaded
-        try:
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.TAG_NAME, "a"))
-            )
-            logger.info("Page loaded successfully with Selenium")
-        except Exception as e:
-            logger.error(f"Failed to load page with Selenium: {e}")
-            return None
-
-        # Parse the page source with BeautifulSoup
+        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, "a")))
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         pdf_links = []
         for link in soup.find_all('a', href=True):
             href = link['href']
             if href.lower().endswith('.pdf'):
-                # Resolve relative URLs
                 if not href.startswith(('http://', 'https://')):
                     base_url = url.rsplit('/', 1)[0]
                     href = os.path.join(base_url, href)
                 pdf_name = href.split('/')[-1].split('?')[0]
                 pdf_links.append({'url': href, 'name': pdf_name})
-
         seen_urls = set()
         unique_pdf_links = [link for link in pdf_links if not (link['url'] in seen_urls or seen_urls.add(link['url']))]
         return unique_pdf_links if unique_pdf_links else None
@@ -281,8 +265,7 @@ def scrape_pdf_links(url):
         logger.error(f"Error fetching PDFs with Selenium: {e}")
         return None
     finally:
-        if driver:
-            driver.quit()
+        driver.quit()
 
 @app.route('/extract_pdf_info', methods=['POST'])
 def extract_pdf_info():
@@ -303,7 +286,6 @@ def extract_pdf_info():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# AJAX scrape endpoint
 @app.route('/scrape', methods=['POST'])
 def scrape():
     url = request.form.get('url')
@@ -318,12 +300,12 @@ def scrape():
 
     elif data_type == 'image':
         image_format = request.form.get('image_format', 'all')
-        images = scrape_images_cached(url, image_format)
+        images = scrape_images(url, image_format)
         if images:
             num_items = num_items or len(images)
             images = images[:min(int(num_items), len(images))]
             return jsonify({'success': True, 'images': list(images), 'image_format': image_format, 'total': len(images)})
-        return jsonify({'success': False, 'error': 'No images found.'})
+        return jsonify({'success': False, 'error': 'No images found or failed to fetch URL'})
 
     elif data_type == 'movie':
         movie_data = scrape_movie_details(url)
@@ -366,13 +348,11 @@ def scrape():
 
     return jsonify({'success': False, 'error': 'Invalid data type'})
 
-# Main route
 @app.route('/', methods=['GET', 'POST'])
 def index():
     history = json.loads(request.cookies.get('history', '[]'))
     return render_template('index.html', history=history)
 
-# Export routes
 @app.route('/export_csv', methods=['POST'])
 def export_csv():
     url = request.form.get('url')
@@ -399,9 +379,11 @@ def export_csv():
 def export_images():
     url = request.form.get('url')
     image_format = request.form.get('image_format', 'all')
-    images = scrape_images_cached(url, image_format)
+    num_items = request.form.get('num_items', type=int)
+    images = scrape_images(url, image_format)
     if not images:
         return jsonify({'success': False, 'error': 'No images to export'})
+    images = images[:num_items] if num_items else images
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for i, img_url in enumerate(images):
