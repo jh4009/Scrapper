@@ -225,8 +225,12 @@
                     const m = data.movie_data;
                     let html = `<h2 class="text-2xl font-semibold mb-4">Movie Details</h2>`;
                     html += `<div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">`;
-                    html += `<img src="${m.poster_url}" alt="${m.name}" class="w-48 h-auto rounded-lg object-cover">`;
+                    html += `<a href="${m.movie_link}" target="_blank">`;
+                    html += `<div class="w-48 h-auto rounded-lg object-cover"><img src="${m.poster_url}" alt="${m.name}" class="w-48 h-auto rounded-lg object-cover"></div>`;
+                    html += `</a>`;
+                    html += `<a href="${m.movie_link}" target="_blank">`;
                     html += `<div><p><strong>Name:</strong> ${m.name}</p><p><strong>Year:</strong> ${m.year}</p>`;
+                    html += `</a>`;
                     html += `<p><strong>Rating:</strong> ${m.rating}</p><p><strong>Plot:</strong> ${m.plot}</p>`;
                     html += `<p><strong>Genre:</strong> ${m.genre}</p></div></div>`;
                     resultsDiv.innerHTML = html;
@@ -234,9 +238,13 @@
                     const b = data.book_data;
                     let html = `<h2 class="text-2xl font-semibold mb-4">Book Details</h2>`;
                     html += `<div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">`;
-                    html += `<img src="${b.cover_url}" alt="${b.name}" class="w-48 h-auto rounded-lg object-cover">`;
+                    html += `<a href="${b.book_link}" target="_blank">`;
+                    html += `<div class="w-48 h-auto rounded-lg object-cover"><img src="${b.cover_url}" alt="${b.name}" class="w-48 h-auto rounded-lg object-cover"></div>`;
+                    html += `</a>`;
                     html += `<div>`;
+                    html += `<a href="${b.book_link}" target="_blank">`;
                     html += `<p><strong>Name:</strong> ${b.name}</p>`;
+                    html += `</a>`;
                     html += `<p><strong>Author:</strong> ${b.author}</p>`;
                     html += `<p><strong>Year:</strong> ${b.year}</p>`;
                     html += `<p><strong>Rating:</strong> ${b.rating}</p>`;
