@@ -200,20 +200,23 @@
                     html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="image_format" value="${data.image_format}"><input type="hidden" name="num_items" value="${data.images.length}"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `</form>`;
                     html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">`;
-                    data.images.forEach(url => {
-                        html += `<div class="flex flex-col items-center">`;
-                        html += `<img src="${url}" alt="Scraped image" class="w-full max-w-xs h-auto rounded-lg shadow-lg object-cover" loading="lazy">`;
-                        html += `<a href="${url}" target="_blank" class="mt-2 text-blue-500 hover:underline">View</a></div>`;
+                    data.images.forEach(image => {
+                        html += `<div class="bg-white p-4 rounded-xl shadow-lg w-85 h-[380px] flex flex-col justify-between">`;
+                        html += `<img src="${image[0]}" alt="${image[1]}" class="w-full h-56 rounded-lg object-cover" loading="lazy">`;
+                        html += `<p class="mt-2 text-gray-700 text-center text-sm flex-1 overflow-hidden text-ellipsis">${image[1]}</p>`;
+                        html += `<div class="mt-2 flex justify-center">`;
+                        html += `<a href="${image[0]}" target="_blank"><button class="py-1 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 w-full">View</button></a>`;
+                        html += `</div>`;
+                        html += `</div>`;
                     });
                     html += `</div>`;
                     resultsDiv.innerHTML = html;
-    
+                
                     const imageFilterForm = document.getElementById('image-filter');
                     const numItemsInput = imageFilterForm.querySelector('input[name="num_items"]');
                     const exportForm = document.getElementById('export-images-form');
                     const numItemsError = document.getElementById('num-items-error');
-    
-                    // Update export form's num_items when input changes
+                
                     numItemsInput.addEventListener('input', () => {
                         const value = parseInt(numItemsInput.value);
                         const max = parseInt(numItemsInput.max);
@@ -226,7 +229,7 @@
                             exportForm.querySelector('input[name="num_items"]').value = value;
                         }
                     });
-    
+                
                     imageFilterForm.addEventListener('submit', (e) => {
                         e.preventDefault();
                         const value = parseInt(numItemsInput.value);
@@ -234,12 +237,11 @@
                         if (value > max) {
                             numItemsError.classList.remove('hidden');
                             numItemsInput.classList.add('border-red-500');
-                            return; // Prevent form submission
+                            return;
                         }
                         if (e.submitter.textContent === "Update Display") {
                             scrapeData(new FormData(e.target));
                         }
-                        // Export as ZIP will proceed normally via form submission
                     });
                 } else if (data.movie_data) {
                     const m = data.movie_data;
@@ -263,7 +265,7 @@
                     html += `<a href="${b.book_link}" target="_blank" class="text-blue-500 hover:underline"><button class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-blue-600">View on Open Library</button></a></div>`;
                     html += `</div>`;
                     resultsDiv.innerHTML = html;
-                } else if (data.videos) {
+                } if (data.videos) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.videos.length} Videos (Total: ${data.total})</h2>`;
                     html += `<form id="video-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
                     html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="video"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
@@ -279,11 +281,15 @@
                     html += `</select></div></div>`;
                     html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
                     html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">`;
-                    data.videos.forEach(url => {
-                        html += `<div class="flex flex-col items-center">`;
-                        html += `<video width="320" height="240" controls class="w-full max-w-xs h-auto rounded-lg shadow-lg">`;
-                        html += `<source src="${url}" type="video/${url.split('.').pop()}"></video>`;
-                        html += `<a href="${url}" target="_blank" class="mt-2 text-blue-500 hover:underline">View</a></div>`;
+                    data.videos.forEach(video => {
+                        html += `<div class="bg-white p-4 rounded-xl shadow-lg w-90 h-[380px] flex flex-col justify-between">`; 
+                        html += `<video controls class="w-full h-56 rounded-lg object-cover">`;
+                        html += `<source src="${video[0]}" type="video/${video[0].split('.').pop()}"></video>`;
+                        html += `<p class="mt-2 text-gray-700 text-center text-sm flex-1 overflow-hidden text-ellipsis">${video[1]}</p>`;
+                        html += `<div class="mt-2 flex justify-center">`; 
+                        html += `<a href="${video[0]}" target="_blank"><button class="py-1 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 w-full">View</button></a>`;
+                        html += `</div>`;
+                        html += `</div>`;
                     });
                     html += `</div>`;
                     resultsDiv.innerHTML = html;
