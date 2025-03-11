@@ -11,6 +11,7 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col">
+    <!-- Header -->
     <header class="bg-white shadow-md py-4">
         <div class="container mx-auto px-6 flex justify-between items-center">
             <a href="https://brainstation-23.com/" target="_blank">
@@ -19,7 +20,8 @@
             <img src="{{ url_for('static', filename='ruet.png') }}" alt="RUET Logo" class="h-12">
         </div>
     </header>
-
+<div class="flex-grow mx-10 ">
+    <!-- Loading Overlay -->
     <div id="loading" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
         <div class="flex items-center space-x-4">
             <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
@@ -27,20 +29,23 @@
         </div>
     </div>
 
+    <!-- Main Content -->
     <main class="flex-grow container mx-auto px-6 py-8">
-        <h1 class="text-4xl font-bold text-center mb-8 text-gray-900">Web Scraper</h1>
+        <h1 class="text-4xl font-bold text-center mb-8" style="color: #1090C2;">Web Scraper</h1>
 
+        <!-- Form -->
         <form id="scrape-form" class="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-lg fade-in">
             <div class="mb-5">
-                <label for="url" id="url-label" class="block text-lg font-semibold text-gray-700 mb-2">Enter URL or Name:</label>
+                <label for="url" id="url-label" class="block text-lg font-semibold text-gray-700 mb-2">Enter URL or Movie Name:</label>
                 <input type="text" id="url" name="url" required 
                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-                       placeholder="e.g., https://example.com or 'Harry Potter'">
+                       placeholder="e.g., https://example.com or 'Inception'">
             </div>
             <div class="mb-5">
                 <label for="data_type" class="block text-lg font-semibold text-gray-700 mb-2">Select Data Type:</label>
                 <select name="data_type" id="data_type" required 
                         class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="" disabled selected>Select Data Type</option>
                     <option value="table">Tables</option>
                     <option value="image">Images</option>
                     <option value="movie">Movie Details</option>
@@ -51,11 +56,20 @@
                     <option value="pdf">PDF Files</option>
                 </select>
             </div>
-            <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Scrape Now</button>
+            <button type="submit" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Scrape Now</button>
         </form>
+        <div id="api-link-container" class="hidden mt-5">
+            <label for="api_link" class="block text-lg font-semibold text-gray-700 mb-2">Enter API Link to Fetch Data:</label>
+            <input type="text" id="api_link" name="api_link" 
+                   class="w-10/12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                   placeholder="e.g., https://api.example.com/store-data">
+            <button id="send-api-link" class=" py-3 px-5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors mt-3">Send Data to API</button>
+        </div>
 
+        <!-- Results Area -->
         <div id="results" class="mt-8"></div>
 
+        <!-- History -->
         {% if history %}
             <section class="mt-8 fade-in">
                 <h2 class="text-2xl font-semibold mb-4">Recent Searches</h2>
@@ -68,6 +82,7 @@
         {% endif %}
     </main>
 
+    <!-- PDF Modal -->
     <div id="pdfInfoModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
             <h3 class="text-xl font-semibold mb-4">PDF Information</h3>
@@ -82,21 +97,25 @@
         </div>
     </div>
 
-    <footer class="bg-gray-800 text-white py-4">
-        <div class="container mx-auto px-6 text-center">
-            <p>© 2025 Web Scraper. All rights reserved.</p>
-        </div>
-    </footer>
+    <!-- Footer -->
+</div>
+<footer class="bg-gray-800 text-white py-4">
+    <div class="container mx-auto px-6 text-center">
+        <p>© 2025 Web Scraper. All rights reserved by <i><a href="https://github.com/jh4009/Web-Scraping">Jahid Hasan & Team</a></i>.</p>
+    </div>
+</footer>
 
     <script>
         const form = document.getElementById('scrape-form');
         const resultsDiv = document.getElementById('results');
         const historyList = document.getElementById('history-list') || document.createElement('ul');
+        const apiLinkContainer = document.getElementById('api-link-container');
+        const sendApiLinkButton = document.getElementById('send-api-link');
 
         async function scrapeData(formData) {
             document.getElementById('loading').classList.remove('hidden');
             resultsDiv.innerHTML = '';
-
+    
             try {
                 const response = await fetch('/scrape', {
                     method: 'POST',
@@ -105,19 +124,21 @@
                 });
                 const data = await response.json();
                 document.getElementById('loading').classList.add('hidden');
-
+    
                 if (!data.success) {
                     resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">${data.error}</div>`;
                     return;
                 }
-
+    
+                // Update history
                 const historyItem = `${formData.get('url')} (${formData.get('data_type').charAt(0).toUpperCase() + formData.get('data_type').slice(1)})`;
                 const li = document.createElement('li');
                 li.className = 'text-gray-700';
                 li.textContent = historyItem;
                 historyList.insertBefore(li, historyList.firstChild);
                 if (historyList.children.length > 5) historyList.removeChild(historyList.lastChild);
-
+    
+                // Render results based on data type
                 if (data.tables) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.tables.length} Tables</h2>`;
                     html += `<div class="bg-white p-4 rounded-xl shadow-lg sticky top-0 z-10">`;
@@ -125,14 +146,14 @@
                     data.tables.forEach((_, i) => html += `<option value="${i}">Table ${i + 1}</option>`);
                     html += `</select>`;
                     html += `<button id="show-tables" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Show Selected</button>`;
-                    html += `<form id="export-csv-form" method="POST" action="/export_csv" class="mt-4"><input type="hidden" name="url" value="${formData.get('url')}"></form>`;
+                    html += `<form id="export-csv-form" method="POST" action="/export_csv" class="mt-4"><input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="api_link" value="${formData.get('api_link')}"></form>`;
                     html += `</div>`;
                     html += `<div id="table-results" class="mt-4"></div>`;
                     resultsDiv.innerHTML = html;
-
+    
                     const tableResultsDiv = document.getElementById('table-results');
                     const exportForm = document.getElementById('export-csv-form');
-
+    
                     function renderSelectedTables() {
                         const selected = Array.from(document.getElementById('table-select').selectedOptions).map(opt => parseInt(opt.value));
                         let tableHtml = '';
@@ -151,16 +172,16 @@
                         });
                         tableResultsDiv.innerHTML = tableHtml;
                         exportForm.innerHTML = `<input type="hidden" name="url" value="${formData.get('url')}">` + 
+                                               `<input type="hidden" name="api_link" value="${formData.get('api_link')}">` +
                                                selected.map(idx => `<input type="hidden" name="table_number" value="${idx}">`).join('') +
-                                               (selected.length ? `<button type="submit" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Export as CSV</button>` : '');
+                                               (selected.length ? `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Export as CSV</button>` : '');
                     }
-
                     document.getElementById('show-tables').addEventListener('click', renderSelectedTables);
                     document.getElementById('table-select').addEventListener('change', renderSelectedTables);
                 } else if (data.images) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.images.length} Images (Total: ${data.total})</h2>`;
                     html += `<form id="image-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="image">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="image"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
                     html += `<div><label class="block text-lg font-semibold mb-2">Number of Images:</label>`;
                     html += `<input type="number" name="num_items" value="${data.images.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg">`;
@@ -170,16 +191,13 @@
                     html += `<option value="all" ${data.image_format === 'all' ? 'selected' : ''}>All</option>`;
                     html += `<option value="png" ${data.image_format === 'png' ? 'selected' : ''}>PNG</option>`;
                     html += `<option value="jpg" ${data.image_format === 'jpg' ? 'selected' : ''}>JPG</option>`;
-                    html += `<option value="webp" ${data.image_format === 'webp' ? 'selected' : ''}>WEBP</option>`;
-                    html += `<option value="gif" ${data.image_format === 'gif' ? 'selected' : ''}>GIF</option>`;
                     html += `</select></div></div>`;
                     html += `<div class="flex space-x-4">`;
                     html += `<button type="submit" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button>`;
-                    html += `<button type="submit" form="export-images-form" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Export as ZIP</button>`;
+                    html += `<button type="submit" form="export-images-form" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Export as ZIP</button>`;
                     html += `</div></form>`;
                     html += `<form id="export-images-form" method="POST" action="/export_images" class="hidden">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="image_format" value="${data.image_format}">`;
-                    html += `<input type="hidden" name="num_items" value="${data.images.length}">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="image_format" value="${data.image_format}"><input type="hidden" name="num_items" value="${data.images.length}"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `</form>`;
                     html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">`;
                     data.images.forEach(url => {
@@ -189,12 +207,13 @@
                     });
                     html += `</div>`;
                     resultsDiv.innerHTML = html;
-
+    
                     const imageFilterForm = document.getElementById('image-filter');
                     const numItemsInput = imageFilterForm.querySelector('input[name="num_items"]');
                     const exportForm = document.getElementById('export-images-form');
                     const numItemsError = document.getElementById('num-items-error');
-
+    
+                    // Update export form's num_items when input changes
                     numItemsInput.addEventListener('input', () => {
                         const value = parseInt(numItemsInput.value);
                         const max = parseInt(numItemsInput.max);
@@ -207,7 +226,7 @@
                             exportForm.querySelector('input[name="num_items"]').value = value;
                         }
                     });
-
+    
                     imageFilterForm.addEventListener('submit', (e) => {
                         e.preventDefault();
                         const value = parseInt(numItemsInput.value);
@@ -215,46 +234,26 @@
                         if (value > max) {
                             numItemsError.classList.remove('hidden');
                             numItemsInput.classList.add('border-red-500');
-                            return;
+                            return; // Prevent form submission
                         }
                         if (e.submitter.textContent === "Update Display") {
                             scrapeData(new FormData(e.target));
                         }
+                        // Export as ZIP will proceed normally via form submission
                     });
                 } else if (data.movie_data) {
                     const m = data.movie_data;
                     let html = `<h2 class="text-2xl font-semibold mb-4">Movie Details</h2>`;
                     html += `<div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">`;
-                    html += `<a href="${m.movie_link}" target="_blank">`;
-                    html += `<div class="w-48 h-auto rounded-lg object-cover"><img src="${m.poster_url}" alt="${m.name}" class="w-48 h-auto rounded-lg object-cover"></div>`;
-                    html += `</a>`;
-                    html += `<a href="${m.movie_link}" target="_blank">`;
+                    html += `<img src="${m.poster_url}" alt="${m.name}" class="w-48 h-auto rounded-lg object-cover">`;
                     html += `<div><p><strong>Name:</strong> ${m.name}</p><p><strong>Year:</strong> ${m.year}</p>`;
-                    html += `</a>`;
                     html += `<p><strong>Rating:</strong> ${m.rating}</p><p><strong>Plot:</strong> ${m.plot}</p>`;
                     html += `<p><strong>Genre:</strong> ${m.genre}</p></div></div>`;
-                    resultsDiv.innerHTML = html;
-                } else if (data.book_data) {
-                    const b = data.book_data;
-                    let html = `<h2 class="text-2xl font-semibold mb-4">Book Details</h2>`;
-                    html += `<div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">`;
-                    html += `<a href="${b.book_link}" target="_blank">`;
-                    html += `<div class="w-48 h-auto rounded-lg object-cover"><img src="${b.cover_url}" alt="${b.name}" class="w-48 h-auto rounded-lg object-cover"></div>`;
-                    html += `</a>`;
-                    html += `<div>`;
-                    html += `<a href="${b.book_link}" target="_blank">`;
-                    html += `<p><strong>Name:</strong> ${b.name}</p>`;
-                    html += `</a>`;
-                    html += `<p><strong>Author:</strong> ${b.author}</p>`;
-                    html += `<p><strong>Year:</strong> ${b.year}</p>`;
-                    html += `<p><strong>Rating:</strong> ${b.rating}</p>`;
-                    html += `<p><strong>Description:</strong> ${b.description}</p>`;
-                    html += `</div></div>`;
                     resultsDiv.innerHTML = html;
                 } else if (data.videos) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.videos.length} Videos (Total: ${data.total})</h2>`;
                     html += `<form id="video-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="video">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="video"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">`;
                     html += `<div><label class="block text-lg font-semibold mb-2">Number of Videos:</label>`;
                     html += `<input type="number" name="num_items" value="${data.videos.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
@@ -270,7 +269,7 @@
                     data.videos.forEach(url => {
                         html += `<div class="flex flex-col items-center">`;
                         html += `<video width="320" height="240" controls class="w-full max-w-xs h-auto rounded-lg shadow-lg">`;
-                        html += `<source src="${url}" type="video/${url.split('.').pop()}"></video>`;
+                        html += `<source src="${url}" type="valueideo/${url.split('.').pop()}"></video>`;
                         html += `<a href="${url}" target="_blank" class="mt-2 text-blue-500 hover:underline">View</a></div>`;
                     });
                     html += `</div>`;
@@ -282,7 +281,7 @@
                 } else if (data.product_details) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.product_details.length} Products (Total: ${data.total})</h2>`;
                     html += `<form id="product-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="ebay">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="ebay"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of Products:</label>`;
                     html += `<input type="number" name="num_items" value="${data.product_details.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
                     html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
@@ -303,7 +302,7 @@
                 } else if (data.headlines) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.headlines.length} Headlines (Total: ${data.total})</h2>`;
                     html += `<form id="headline-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="news">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="news"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of Headlines:</label>`;
                     html += `<input type="number" name="num_items" value="${data.headlines.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
                     html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
@@ -318,7 +317,7 @@
                 } else if (data.pdf_links) {
                     let html = `<h2 class="text-2xl font-semibold mb-4">Found ${data.pdf_links.length} PDFs (Total: ${data.total})</h2>`;
                     html += `<form id="pdf-filter" class="bg-white p-4 rounded-xl shadow-lg">`;
-                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="pdf">`;
+                    html += `<input type="hidden" name="url" value="${formData.get('url')}"><input type="hidden" name="data_type" value="pdf"><input type="hidden" name="api_link" value="${formData.get('api_link')}">`;
                     html += `<div class="mb-4"><label class="block text-lg font-semibold mb-2">Number of PDFs:</label>`;
                     html += `<input type="number" name="num_items" value="${data.pdf_links.length}" min="1" max="${data.total}" class="w-full p-3 border border-gray-300 rounded-lg"></div>`;
                     html += `<button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Display</button></form>`;
@@ -327,7 +326,7 @@
                         html += `<li class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm hover:shadow-md">`;
                         html += `<span class="text-blue-600 hover:underline cursor-pointer pdf-name" data-url="${pdf.url}">${pdf.name}</span>`;
                         html += `<div class="pdf-buttons hidden space-x-2">`;
-                        html += `<a href="${pdf.url}" download class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Download</a>`;
+                        html += `<a href="${pdf.url}" download class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Download</a>`;
                         html += `<button onclick="extractInfo('${pdf.url}')" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Extract Info</button>`;
                         html += `</div></li>`;
                     });
@@ -343,8 +342,7 @@
                         e.preventDefault();
                         scrapeData(new FormData(e.target));
                     });
-                }
-
+                }apiLinkContainer.classList.remove('hidden');
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
                 resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">Error: ${error.message}</div>`;
@@ -356,10 +354,38 @@
             scrapeData(new FormData(form));
         });
 
+        sendApiLinkButton.addEventListener('click', async () => {
+            const apiLink = document.getElementById('api_link').value;
+            if (!apiLink) {
+                alert('Please enter a valid API link.');
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append('api_link', apiLink);
+
+            try {
+                const response = await fetch('/send_to_api', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(`Error: ${data.error}`);
+                    return;
+                }
+
+                alert('Data successfully sent to the API.');
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+
         document.getElementById('data_type').addEventListener('change', (e) => {
-            const value = e.target.value;
-            document.getElementById('url-label').textContent = 
-                value === 'movie' || value === 'book' ? 'Enter Name:' : 'Enter URL:';
+            document.getElementById('url-label').textContent = e.target.value === 'movie' ? 'Enter Movie Name:' : 'Enter URL:';
         });
 
         function extractInfo(pdfUrl) {
