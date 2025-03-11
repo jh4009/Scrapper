@@ -22,6 +22,12 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Add configuration for rate limiting and caching ---
+# from flask_limiter import Limiter
+# from flask_limiter.util import get_remote_address
+# limiter = Limiter(get_remote_address, app=app, default_limits=["100 per day", "10 per hour"])
+
+
 # Cached scraping functions
 @lru_cache(maxsize=100)
 def scrape_tables_cached(url):
@@ -36,7 +42,7 @@ def scrape_tables(url):
         table_data = []
         for table in tables:
             rows = table.find_all('tr')
-            table_rows = [[col.text.strip() for col in row.find_all('td')] for row in rows if row.find_all('td')]
+            table_rows = [[col.text.strip() for col in row.find_all( 'td')] for row in rows if row.find_all( 'td')]
             if table_rows:
                 table_data.append(table_rows)
         return table_data
@@ -131,6 +137,9 @@ def scrape_movie_details(movie_name):
         genre_elems = soup.select('.ipc-chip__text')
         genres = [genre.text.strip() for genre in genre_elems] if genre_elems else ["N/A"]
         
+        runtime_elem = soup.select_one('li[data-testid="title-techspec_runtime"] div')
+        runtime = runtime_elem.text.strip() if runtime_elem else "N/A"
+
         return {
             "name": title,
             "poster_url": poster_url,
@@ -367,8 +376,57 @@ def extract_pdf_info():
         return jsonify({'success': True, 'text': text, 'title': title, 'author': author, 'page_count': page_count})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+@app.route('/send_to_api', methods=['POST'])
+# @limiter.limit("5 per minute")
+def send_to_api():
+    api_link = request.form.get('api_link')
+    url = request.form.get('url')
+    data_type = request.form.get('data_type')
+    num_items = request.form.get('num_items', type=int)
 
+    if not api_link:
+        return jsonify({'success': False, 'error': 'API link is required'})
+
+    scrape_data = None
+
+    if data_type == 'table':
+        scrape_data = scrape_tables_cached(url)
+
+    elif data_type == 'image':
+        image_format = request.form.get('image_format', 'all')
+        scrape_data = scrape_images(url, image_format)
+
+    elif data_type == 'movie':
+        scrape_data = scrape_movie_details(url)
+
+    elif data_type == 'pdf':
+        scrape_data = scrape_pdf_links(url)
+    
+    elif data_type == 'book':
+        scrape_data = scrape_book_details(url)
+    
+    elif data_type == 'video':
+        video_format = request.form.get('video_format', 'all')
+        scrape_data = scrape_videos(url, video_format)
+    
+    elif data_type == 'ebay':
+        scrape_data = scrape_ebay_product(url)
+    
+    elif data_type == 'news':
+        scrape_data = scrape_news_headlines(url)
+
+    if not scrape_data:
+        return jsonify({'success': False, 'error': 'No data found.'})
+    
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(api_link, json=scrape_data, headers=headers)
+        response.raise_for_status()
+        return jsonify({'success': True, 'message': 'Data sent to API successfully.'})
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': str(e)})
 @app.route('/scrape', methods=['POST'])
+# @limiter.limit("10 per minute")
 def scrape():
     url = request.form.get('url')
     data_type = request.form.get('data_type')
@@ -439,6 +497,17 @@ def scrape():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     history = json.loads(request.cookies.get('history', '[]'))
+
+    if request.method == 'POST':
+        url = request.form.get('url')
+        data_type = request.form.get('data_type')
+        if url and data_type:
+            history.append((url, data_type))
+            history = history[:5]
+            resp = make_response(render_template('index.html', history=history))
+            resp.set_cookie('history', json.dumps(history), max_age=3600 * 24 * 30)
+            return resp
+
     return render_template('index.html', history=history)
 
 @app.route('/export_csv', methods=['POST'])
