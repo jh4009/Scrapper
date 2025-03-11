@@ -85,8 +85,6 @@ def scrape_images(url, image_format):
         logger.error(f"Error fetching {url}: {e}")
         return None
 
-import requests
-from bs4 import BeautifulSoup
 
 def scrape_movie_details(movie_name):
     headers = {
@@ -129,7 +127,7 @@ def scrape_movie_details(movie_name):
         plot_elem = soup.select_one('span[data-testid="plot-xl"]')
         plot = plot_elem.text.strip() if plot_elem else "N/A"
         
-        # Extracting Genres (Multiple if available)
+        # Extracting Genresss (Multiple if available)
         genre_elems = soup.select('.ipc-chip__text')
         genres = [genre.text.strip() for genre in genre_elems] if genre_elems else ["N/A"]
         
