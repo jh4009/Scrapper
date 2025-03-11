@@ -64,14 +64,27 @@ def scrape_images(url, image_format):
             'gif': ['.gif'],
             'all': ['.png', '.jpg', '.jpeg', '.webp', '.gif']
         }
-        image_urls = []
+        image_data = {}  # Use a dict to deduplicate by URL
+        
         for img in images:
             # Check multiple attributes for image source
             img_url = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
             if img_url and any(img_url.lower().endswith(ext) for ext in allowed_formats[image_format]):
                 full_url = urljoin(url, img_url)
-                image_urls.append(full_url)
-        if not image_urls:  # Fallback to Selenium for dynamic content
+                # Look for a parent figure tag and extract figcaption
+                caption = None
+                figure = img.find_parent('figure')
+                if figure:
+                    figcaption = figure.find('figcaption')
+                    if figcaption:
+                        caption = figcaption.get_text(strip=True)
+                # Fallback to alt attribute or filename
+                if not caption:
+                    caption = img.get('alt') or os.path.basename(full_url)
+                # Deduplicate by URL
+                image_data[full_url] = caption
+        
+        if not image_data:  # Fallback to Selenium for dynamic content
             logger.info(f"No images found with BS4 at {url}, trying Selenium")
             chrome_options = Options()
             chrome_options.add_argument("--headless")
@@ -84,9 +97,19 @@ def scrape_images(url, image_format):
                 img_url = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
                 if img_url and any(img_url.lower().endswith(ext) for ext in allowed_formats[image_format]):
                     full_url = urljoin(url, img_url)
-                    image_urls.append(full_url)
+                    caption = None
+                    figure = img.find_parent('figure')
+                    if figure:
+                        figcaption = figure.find('figcaption')
+                        if figcaption:
+                            caption = figcaption.get_text(strip=True)
+                    if not caption:
+                        caption = img.get('alt') or os.path.basename(full_url)
+                    image_data[full_url] = caption
             driver.quit()
-        return image_urls if image_urls else None
+        
+        # Return tuple of (url, caption) pairs
+        return tuple((url, caption) for url, caption in image_data.items()) if image_data else None
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
         return None
@@ -218,9 +241,19 @@ def scrape_videos(url, video_format):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         videos = soup.find_all('video')
-        video_urls = []
+        video_data = {}  # Use a dict to deduplicate by URL
+        
         for video in videos:
             video_sources = video.find_all('source')
+            caption = None
+            # Look for a parent figure tag and extract figcaption
+            figure = video.find_parent('figure')
+            if figure:
+                figcaption = figure.find('figcaption')
+                if figcaption:
+                    caption = figcaption.get_text(strip=True)
+            
+            # Take the first valid source per video tag
             for source in video_sources:
                 video_url = source.get('src')
                 if video_url:
@@ -228,9 +261,18 @@ def scrape_videos(url, video_format):
                         continue
                     if not video_url.startswith('http'):
                         base_url = url.rsplit('/', 1)[0]
-                        video_url = os.path.join(base_url, video_url)
-                    video_urls.append(video_url)
-        return tuple(video_urls)
+                        video_url = urljoin(base_url, video_url)  # Use urljoin for proper URL construction
+                    
+                    # Use caption if found, else infer from URL or title attribute
+                    if not caption:
+                        caption = source.get('title') or os.path.basename(video_url)
+                    
+                    # Add to dict to deduplicate (URL as key)
+                    video_data[video_url] = caption
+                    break  # Stop after the first valid source for this video
+        
+        # Convert dict to list of tuples
+        return tuple((url, caption) for url, caption in video_data.items())
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching {url}: {e}")
         return None
