@@ -364,7 +364,7 @@
                 }apiLinkContainer.classList.remove('hidden');
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
-                resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">Error: ${error.message}</div>`;
+                resultsDiv.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg text-center fade-in">Error3: ${error.message}</div>`;
             }
         }
 
@@ -392,13 +392,13 @@
                 const data = await response.json();
 
                 if (!data.success) {
-                    alert(`Error: ${data.error}`);
+                    alert(`Error1: ${data.error}`);
                     return;
                 }
 
                 alert('Data successfully sent to the API.');
             } catch (error) {
-                alert(`Error: ${error.message}`);
+                alert(`Error2: ${error.message}`);
             }
         });
 
@@ -424,12 +424,12 @@
                     document.getElementById('pdfText').textContent = data.text || 'No text extracted.';
                     document.getElementById('pdfInfoModal').classList.remove('hidden');
                 } else {
-                    alert('Error: ' + data.error);
+                    alert('Error4: ' + data.error);
                 }
             })
             .catch(error => {
                 document.getElementById('loading').classList.add('hidden');
-                alert('Error: ' + error);
+                alert('Error5: ' + error);
             });
         }
 

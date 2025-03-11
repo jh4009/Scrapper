@@ -178,7 +178,6 @@ def scrape_movie_details(movie_name):
     except Exception as e:
         return {"error": f"An unexpected error occurred: {e}"}
 
-    
 def scrape_book_details(book_name):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"}
     try:
